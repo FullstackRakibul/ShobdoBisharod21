@@ -8,7 +8,7 @@ useHead({
     { name: 'publisher', content: '@fullstackrakibul' },
     { name: 'description', content: 'আপনার বাংলা শব্দভান্ডার যাচাই করুন — ২১টি শব্দ দিয়ে পরীক্ষা করুন কতটি খাঁটি বাংলা!' },
     { property: 'og:title', content: 'শব্দবিশারদ ২১ — বাংলা শব্দ খেলা' },
-    { property: 'og:description', content: '২১শে ফেব্রুয়ারি উপলক্ষে আপনার বাংলা শব্দভান্ডার পরীক্ষা করুন' },
+    // { property: 'og:description', content: '২১শে ফেব্রুয়ারি উপলক্ষে আপনার বাংলা শব্দভান্ডার পরীক্ষা করুন' },
   ],
 })
 </script>
