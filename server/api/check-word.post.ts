@@ -21,8 +21,8 @@ function normalizeBangla(text: string): string {
 }
 
 /**
- * Foreign-origin language markers — checked FIRST (priority).
- * If any of these appear in the Wiktionary etymology, the word is foreign.
+ * Foreign-origin language markers.
+ * Only used to reject a word when NO pure marker is present.
  */
 const FOREIGN_MARKERS = [
     'বিদেশী', 'বিদেশি',
@@ -44,14 +44,16 @@ const FOREIGN_MARKERS = [
 ]
 
 /**
- * Pure-origin (Bangla/Sanskrit) markers — checked SECOND.
- * Only accepted if NO foreign marker was found.
+ * Pure-origin (Bangla/Sanskrit) markers — checked FIRST (priority).
+ * If any of these appear, the word is accepted even if foreign markers
+ * exist elsewhere on the page (those are typically translations/comparisons).
  */
 const PURE_MARKERS = [
     'তৎসম',
     'তদ্ভব',
     'সংস্কৃত',
     'প্রাকৃত',
+    'বাংলা',
     'দেশি', 'দেশী',
     'অর্ধতৎসম',
 ]
@@ -76,12 +78,13 @@ function findMarker(text: string, markers: string[]): string | null {
 }
 
 /**
- * Analyze Wiktionary page content with Foreign-First priority.
+ * Analyze Wiktionary page content with Pure-First priority.
  *
  * Strategy:
  *   1. Try to extract the etymology section specifically.
- *   2. Check FOREIGN markers first — if found, reject immediately.
- *   3. Only then check PURE markers — accept only if no foreign marker exists.
+ *   2. Check PURE markers first — if found, accept immediately.
+ *      (Foreign markers like 'ইংরেজি' often appear as translations, not origins.)
+ *   3. Only then check FOREIGN markers — reject only if no pure marker exists.
  *   4. If no clear etymology, return null (caller decides).
  */
 function analyzeEtymology(content: string): { type: 'pure' | 'foreign'; reason: string } | null {
@@ -89,20 +92,9 @@ function analyzeEtymology(content: string): { type: 'pure' | 'foreign'; reason: 
     const etymologyMatch = content.match(ETYMOLOGY_SECTION_REGEX)
     const etymologySection = etymologyMatch ? etymologyMatch[1] : null
 
-    // --- FOREIGN CHECK FIRST (priority) ---
-    // Check etymology section first, then fall back to full content
-    const foreignInEtymology = etymologySection ? findMarker(etymologySection, FOREIGN_MARKERS) : null
-    const foreignInContent = findMarker(content, FOREIGN_MARKERS)
-    const foreignMarker = foreignInEtymology || foreignInContent
-
-    if (foreignMarker) {
-        return {
-            type: 'foreign',
-            reason: `বিদেশী উৎসের শব্দ — "${foreignMarker}" (উইকিশব্দকোষ)`,
-        }
-    }
-
-    // --- PURE CHECK SECOND ---
+    // --- PURE CHECK FIRST (priority) ---
+    // If a pure-origin marker exists, the word is accepted regardless
+    // of foreign markers elsewhere (those are typically translations).
     const pureInEtymology = etymologySection ? findMarker(etymologySection, PURE_MARKERS) : null
     const pureInContent = findMarker(content, PURE_MARKERS)
     const pureMarker = pureInEtymology || pureInContent
@@ -111,6 +103,19 @@ function analyzeEtymology(content: string): { type: 'pure' | 'foreign'; reason: 
         return {
             type: 'pure',
             reason: `খাঁটি বাংলা শব্দ — "${pureMarker}" (উইকিশব্দকোষ)`,
+        }
+    }
+
+    // --- FOREIGN CHECK SECOND (fallback) ---
+    // Only reject if NO pure marker was found above.
+    const foreignInEtymology = etymologySection ? findMarker(etymologySection, FOREIGN_MARKERS) : null
+    const foreignInContent = findMarker(content, FOREIGN_MARKERS)
+    const foreignMarker = foreignInEtymology || foreignInContent
+
+    if (foreignMarker) {
+        return {
+            type: 'foreign',
+            reason: `বিদেশী উৎসের শব্দ — "${foreignMarker}" (উইকিশব্দকোষ)`,
         }
     }
 
@@ -192,7 +197,7 @@ export default defineEventHandler(async (event): Promise<CheckWordResponse> => {
             }
         }
 
-        // Analyze etymology with Foreign-First priority
+        // Analyze etymology with Pure-First priority
         const result = analyzeEtymology(content)
 
         if (result) {
