@@ -1,0 +1,41 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Misc
+.DS_Store
+.fleet
+.idea
+.vscode
+Thumbs.db
+Desktop.ini
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Lock files (if using npm)
+pnpm-lock.yaml
+
+# TypeScript
+*.tsbuildinfo
+
+# OS generated
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
